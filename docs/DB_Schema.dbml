@@ -1,0 +1,222 @@
+Project Smart_Hospital_Management_System {
+  database_type: 'PostgreSQL'
+  Note: 'Relational Database Schema Representation'
+}
+
+Table Person {
+  Person_ID int [primary key]
+  National_ID varchar [unique, note: 'Constraint: Globally unique citizen ID']
+  
+  Name_First_Name varchar [note: 'Composite: Name']
+  Name_Last_Name varchar [note: 'Composite: Name']
+  
+  Date_of_Birth date [note: 'Check: <= CURRENT_DATE and strictly before medical events']
+  Gender varchar
+  Blood_Type varchar
+  Phone_Number varchar [note: 'Constraint: Must strictly differ from Hospital Contact_Number']
+  
+  Address_Country varchar [note: 'Composite: Address']
+  Address_City varchar [note: 'Composite: Address']
+  Address_District varchar [note: 'Composite: Address']
+  Address_Street varchar [note: 'Composite: Address']
+  Address_Building_No varchar [note: 'Composite: Address']
+  Address_Apartment_No varchar [note: 'Composite: Address']
+  Address_Zip_Code varchar [note: 'Composite: Address']
+  
+  Email varchar [unique, note: 'Constraint: Globally unique contact email']
+  Password_Hash varchar
+}
+
+Table Medical_Staff {
+  Person_ID int [primary key]
+  Department_ID int
+}
+
+Table Patient {
+  Person_ID int [primary key]
+  Allergies varchar[] [note: 'Multivalued']
+}
+
+Table Doctor {
+  Person_ID int [primary key]
+  Specialty varchar
+  License_Number varchar [unique, note: 'Constraint: Strictly unique professional identity']
+  Treatments varchar[] [note: 'Multivalued']
+}
+
+Table Nurse {
+  Person_ID int [primary key]
+}
+
+Table Admin {
+  Person_ID int [primary key]
+  Role_Level varchar
+  MFA_Secret varchar [not null, note: 'Constraint: Security mandate requires MFA']
+}
+
+Table Staff {
+  Person_ID int [primary key]
+  Job_Title varchar
+}
+
+Table Disease {
+  Disease_ID int [primary key]
+  Disease_Name varchar
+  Disease_Type varchar
+  Symptoms varchar[] [note: 'Multivalued']
+}
+
+Table Hospital {
+  Hospital_ID int [primary key]
+  Hospital_Name varchar
+  
+  Address_Country varchar [note: 'Composite: Address']
+  Address_City varchar [note: 'Composite: Address']
+  Address_District varchar [note: 'Composite: Address']
+  Address_Street varchar [note: 'Composite: Address']
+  Address_Building_No varchar [note: 'Composite: Address']
+  Address_Zip_Code varchar [note: 'Composite: Address']
+  
+  Contact_Number varchar
+}
+
+Table Department {
+  Department_ID int [primary key]
+  Hospital_ID int
+  Department_Name varchar
+  Extension_Number varchar
+}
+
+Table Room {
+  Department_ID int 
+  Room_Number varchar 
+  Room_Type varchar
+  
+  Indexes {
+    (Department_ID, Room_Number) [pk, note: 'Composite PK (Weak Entity)']
+  }
+}
+
+Table Appointment {
+  Appointment_ID int [primary key]
+  Patient_ID int 
+  Doctor_ID int 
+  Appointment_Date date [note: 'Check: Cannot be prior to booking moment']
+  Appointment_Time time
+  Status_ID int [note: '0: Cancelled, 1: Scheduled, 2: Completed']
+  Chief_Complaint varchar
+}
+
+Table Prescription {
+  Appointment_ID int [primary key, note: 'Weak Entity linked to Appointment']
+  Medication_Name varchar
+  Dosage varchar
+  Instructions varchar
+  Note: 'Constraint: Generation requires Appointment Status_ID = 2'
+}
+
+Table Lab_Result {
+  Lab_ID int [primary key]
+  Appointment_ID int
+  Test_Type varchar
+  Result_Value varchar
+  Reference_Range varchar
+  Test_Date date
+}
+
+Table Insurance {
+  Patient_ID int [primary key]
+  Provider_ID int
+  Policy_Number varchar
+  Coverage_Rate decimal [note: 'Check: 0 <= x <= 100']
+}
+
+Table Insurance_Provider {
+  Provider_ID int [primary key]
+  Provider_Name varchar
+  Tax_Number varchar
+  Provider_Email varchar
+}
+
+Table Payer {
+  Payer_ID int [primary key, note: 'Union Entity for Patient and Insurance_Provider']
+  Payer_Type varchar [note: 'Discriminator (Person vs Entity)']
+}
+
+Table Billing {
+  Bill_ID int [primary key]
+  Appointment_ID int
+  Total_Amount decimal [note: 'Check: >= 0']
+  Patient_Share decimal [note: 'Check: >= 0 and <= Total_Amount']
+  Payment_Status int
+  Note: 'Constraint: Generation requires Appointment Status_ID = 2'
+}
+
+Table Payment {
+  Payment_ID int [primary key]
+  Bill_ID int
+  Payer_ID int
+  Amount_Paid decimal [note: 'Check: >= 0']
+  Payment_Date timestamp
+  Note: 'Constraint: Total Amount_Paid for a Bill_ID <= Billing.Total_Amount'
+}
+
+Ref: Person.Person_ID - Patient.Person_ID
+Ref: Person.Person_ID - Admin.Person_ID
+Ref: Person.Person_ID - Staff.Person_ID
+Ref: Person.Person_ID - Medical_Staff.Person_ID
+Ref: Medical_Staff.Person_ID - Doctor.Person_ID
+Ref: Medical_Staff.Person_ID - Nurse.Person_ID
+Ref: Patient.Person_ID - Payer.Payer_ID
+Ref: Insurance_Provider.Provider_ID - Payer.Payer_ID
+
+Ref: Hospital.Hospital_ID < Department.Hospital_ID
+
+Ref: Department.Department_ID < Medical_Staff.Department_ID 
+Ref: Department.Department_ID < Room.Department_ID
+
+Ref: Patient.Person_ID < Appointment.Patient_ID
+Ref: Doctor.Person_ID < Appointment.Doctor_ID
+Ref: Appointment.Appointment_ID - Prescription.Appointment_ID
+Ref: Appointment.Appointment_ID < Lab_Result.Appointment_ID
+Ref: Appointment.Appointment_ID - Billing.Appointment_ID
+
+Ref: Patient.Person_ID - Insurance.Patient_ID
+Ref: Insurance_Provider.Provider_ID < Insurance.Provider_ID
+
+Ref: Billing.Bill_ID < Payment.Bill_ID
+Ref: Payer.Payer_ID < Payment.Payer_ID
+
+Ref: Patient.Person_ID <> Disease.Disease_ID
+
+
+TableGroup "1. Users & Staff" {
+  Person
+  Patient
+  Admin
+  Staff
+  Medical_Staff
+  Doctor
+  Nurse
+}
+
+TableGroup "2. Facility" {
+  Hospital
+  Department
+  Room
+}
+
+TableGroup "3. Medical Operations" {
+  Disease
+  Appointment
+  Prescription
+  Lab_Result
+}
+
+TableGroup "4. Financial Operations" {
+  Payer
+  Insurance_Provider
+  Insurance
+  Billing
+  Payment
+}

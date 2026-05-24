@@ -1,0 +1,230 @@
+graph EER_Diagram {
+    layout=fdp; 
+    overlap=false;
+    splines=true;
+    repulsiveforce=2.5;
+    node [fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+
+    node [shape=box, peripheries=1, style=filled, fillcolor=lightblue];
+    Person [label="PERSON"];
+    Hospital [label="HOSPITAL"];
+    Department [label="DEPARTMENT"];
+    Disease [label="DISEASE"];
+    Appointment [label="APPOINTMENT"];
+    Lab_Result [label="LAB_RESULT"];
+    Insurance [label="INSURANCE"];
+    Ins_Provider [label="INSURANCE_PROVIDER"];
+    Payer [label="PAYER"];
+    Billing [label="BILLING"];
+    Payment [label="PAYMENT"];
+
+    Patient [label="PATIENT"];
+    Med_Staff [label="MEDICAL_STAFF"];
+    Doctor [label="DOCTOR"];
+    Nurse [label="NURSE"];
+    Admin [label="ADMIN"];
+    Staff [label="STAFF"];
+
+    node [shape=box, peripheries=2, fillcolor=lightpink];
+    Room [label="ROOM"];
+    Prescription [label="PRESCRIPTION"];
+
+    node [shape=diamond, peripheries=1, fillcolor=lightyellow];
+    Has_Dept [label=""];
+    Employs [label=""];
+    Books [label=""];
+    Conducts [label=""];
+    Diagnosed [label="Diagnosed With"];
+    Requires_Lab [label=""];
+    Has_Ins [label=""];
+    Provides_Ins [label=""];
+    Generates [label=""];
+    Pays_Bill [label=""];
+    Made_By [label=""];
+
+    node [shape=diamond, peripheries=2, fillcolor=lightyellow];
+    Contains_Room [label=""];
+    Results_In [label=""];
+
+    node [shape=triangle, peripheries=1, fillcolor=white];
+    ISA_Person [label=""];
+    ISA_Med [label=""];
+    UNION_Payer [label=""];
+
+    Person -- ISA_Person;
+    ISA_Person -- Patient;
+    ISA_Person -- Med_Staff;
+    ISA_Person -- Admin;
+    ISA_Person -- Staff;
+
+    Med_Staff -- ISA_Med;
+    ISA_Med -- Doctor;
+    ISA_Med -- Nurse;
+
+    Patient -- UNION_Payer;
+    Ins_Provider -- UNION_Payer;
+    UNION_Payer -- Payer;
+
+    Hospital -- Has_Dept [label=""];
+    Has_Dept -- Department [label="N"];
+    Department -- Contains_Room [label="1"];
+    Contains_Room -- Room [label="N"];
+    Department -- Employs [label="1"];
+    Employs -- Med_Staff [label="N"];
+    Patient -- Books [label="1"];
+    Books -- Appointment [label="N"];
+    Doctor -- Conducts [label="1"];
+    Conducts -- Appointment [label="N"];
+    Patient -- Diagnosed [label="M"];
+    Diagnosed -- Disease [label="N"];
+    Appointment -- Results_In [label="1"];
+    Results_In -- Prescription [label="1"];
+    Appointment -- Requires_Lab [label="1"];
+    Requires_Lab -- Lab_Result [label="N"];
+    Patient -- Has_Ins [label="1"];
+    Has_Ins -- Insurance [label="1"];
+    Ins_Provider -- Provides_Ins [label="1"];
+    Provides_Ins -- Insurance [label="N"];
+    Appointment -- Generates [label="1"];
+    Generates -- Billing [label="1"];
+    Billing -- Pays_Bill [label="1"];
+    Pays_Bill -- Payment [label="N"];
+    Payer -- Made_By [label="1"];
+    Made_By -- Payment [label="N"];
+
+    node [shape=ellipse, peripheries=1, fillcolor=white];
+
+    Per_ID [label=<<U>Person_ID</U>>];
+    Per_NatID [label="National_ID"];
+    Per_DOB [label="Date_of_Birth"];
+    Per_Gender [label="Gender"];
+    Per_Blood [label="Blood_Type"];
+    Per_Phone [label="Phone_Number"];
+    Per_Email [label="Email"];
+    Per_Pass [label="Password_Hash"];
+    Person -- {Per_ID; Per_NatID; Per_DOB; Per_Gender; Per_Blood; Per_Phone; Per_Email; Per_Pass};
+
+    Per_Name [label="Name"];
+    Per_FName [label="First_Name"];
+    Per_LName [label="Last_Name"];
+    Person -- Per_Name;
+    Per_Name -- {Per_FName; Per_LName};
+
+    Per_Addr [label="Address"];
+    Per_Country [label="Country"];
+    Per_City [label="City"];
+    Per_District [label="District"];
+    Per_Street [label="Street"];
+    Per_Bld [label="Building_No"];
+    Per_Apt [label="Apartment_No"];
+    Per_Zip [label="Zip_Code"];
+    Person -- Per_Addr;
+    Per_Addr -- {Per_Country; Per_City; Per_District; Per_Street; Per_Bld; Per_Apt; Per_Zip};
+
+    Med_DeptID [label="Department_ID"];
+    Med_Staff -- Med_DeptID;
+
+    Doc_Spec [label="Specialty"];
+    Doc_Lic [label="License_Number"];
+    Doctor -- {Doc_Spec; Doc_Lic};
+
+    Adm_Role [label="Role_Level"];
+    Adm_MFA [label="MFA_Secret"];
+    Admin -- {Adm_Role; Adm_MFA};
+
+    Stf_Title [label="Job_Title"];
+    Staff -- Stf_Title;
+
+    Hosp_Name [label="Hospital_Name"];
+    Hosp_Phone [label="Contact_Number"];
+    Hospital -- {Hosp_ID; Hosp_Name; Hosp_Phone};
+
+    Hosp_Addr [label="Address"];
+    Hosp_Country [label="Country"];
+    Hosp_City [label="City"];
+    Hosp_District [label="District"];
+    Hosp_Street [label="Street"];
+    Hosp_Bld [label="Building_No"];
+    Hosp_Zip [label="Zip_Code"];
+    Hospital -- Hosp_Addr;
+    Hosp_Addr -- {Hosp_Country; Hosp_City; Hosp_District; Hosp_Street; Hosp_Bld; Hosp_Zip};
+
+    Dept_ID [label=<<U>Department_ID</U>>];
+    Dept_HospID [label="Hospital_ID"];
+    Dept_Name [label="Department_Name"];
+    Dept_Ext [label="Extension_Number"];
+    Department -- {Dept_ID; Dept_HospID; Dept_Name; Dept_Ext};
+
+    Room_DeptID [label=<<I>Department_ID</I>>];
+    Room_No [label=<<I>Room_Number</I>>];
+    Room_Type [label="Room_Type"];
+    Room -- {Room_DeptID; Room_No; Room_Type};
+
+    Dis_ID [label=<<U>Disease_ID</U>>];
+    Dis_Name [label="Disease_Name"];
+    Dis_Type [label="Disease_Type"];
+    Disease -- {Dis_ID; Dis_Name; Dis_Type};
+
+    Appt_PatID [label="Patient_ID"];
+    Appt_DocID [label="Doctor_ID"];
+    Appt_Date [label="Appointment_Date"];
+    Appt_Time [label="Appointment_Time"];
+    Appt_Status [label="Status_ID"];
+    Appt_Comp [label="Chief_Complaint"];
+    Appointment -- {Appt_ID; Appt_PatID; Appt_DocID; Appt_Date; Appt_Time; Appt_Status; Appt_Comp};
+
+    Presc_ApptID [label=<<I>Appointment_ID</I>>];
+    Presc_Med [label="Medication_Name"];
+    Presc_Dosage [label="Dosage"];
+    Presc_Inst [label="Instructions"];
+    Prescription -- {Presc_ApptID; Presc_Med; Presc_Dosage; Presc_Inst};
+
+    Lab_ID [label=<<U>Lab_ID</U>>];
+    Lab_ApptID [label="Appointment_ID"];
+    Lab_Test [label="Test_Type"];
+    Lab_Val [label="Result_Value"];
+    Lab_Ref [label="Reference_Range"];
+    Lab_Date [label="Test_Date"];
+    Lab_Result -- {Lab_ID; Lab_ApptID; Lab_Test; Lab_Val; Lab_Ref; Lab_Date};
+
+    Prov_ID [label=<<U>Provider_ID</U>>];
+    Prov_Name [label="Provider_Name"];
+    Prov_Tax [label="Tax_Number"];
+    Prov_Email [label="Provider_Email"];
+    Ins_Provider -- {Prov_ID; Prov_Name; Prov_Tax; Prov_Email};
+
+    Ins_PatID [label=<<U>Patient_ID</U>>];
+    Ins_ProvID [label="Provider_ID"];
+    Ins_Pol [label="Policy_Number"];
+    Ins_Cov [label="Coverage_Rate"];
+    Insurance -- {Ins_PatID; Ins_ProvID; Ins_Pol; Ins_Cov};
+
+    Pay_ID [label=<<U>Payer_ID</U>>];
+    Pay_Type [label="Payer_Type"];
+    Payer -- {Pay_ID; Pay_Type};
+
+    Bill_ID [label=<<U>Bill_ID</U>>];
+    Bill_ApptID [label="Appointment_ID"];
+    Bill_Tot [label="Total_Amount"];
+    Bill_Share [label="Patient_Share"];
+    Bill_Stat [label="Payment_Status"];
+    Billing -- {Bill_ID; Bill_ApptID; Bill_Tot; Bill_Share; Bill_Stat};
+
+    Pmt_ID [label=<<U>Payment_ID</U>>];
+    Pmt_BillID [label="Bill_ID"];
+    Pmt_PayerID [label="Payer_ID"];
+    Pmt_Amt [label="Amount_Paid"];
+    Pmt_Date [label="Payment_Date"];
+    Payment -- {Pmt_ID; Pmt_BillID; Pmt_PayerID; Pmt_Amt; Pmt_Date};
+
+    node [shape=ellipse, peripheries=2, fillcolor=white];
+    Pat_Allergies [label="Allergies"];
+    Patient -- Pat_Allergies;
+
+    Doc_Treatments [label="Treatments"];
+    Doctor -- Doc_Treatments;
+
+    Dis_Symptoms [label="Symptoms"];
+    Disease -- Dis_Symptoms;
+}

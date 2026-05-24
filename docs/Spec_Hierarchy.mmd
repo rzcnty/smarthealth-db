@@ -1,0 +1,60 @@
+erDiagram
+    PERSON {
+        int Person_ID PK
+        string National_ID UK
+        string First_Name "Composite: Name"
+        string Last_Name "Composite: Name"
+        date Date_of_Birth
+        string Gender
+        string Blood_Type
+        string Phone_Number
+        string Country "Composite: Address"
+        string City "Composite: Address"
+        string District "Composite: Address"
+        string Street "Composite: Address"
+        string Building_No "Composite: Address"
+        string Apartment_No "Composite: Address"
+        string Zip_Code "Composite: Address"
+        string Email UK
+        string Password_Hash
+    }
+
+    MEDICAL_STAFF {
+        int Person_ID PK
+        int Department_ID 
+    }
+
+    PATIENT {
+        int Person_ID PK 
+        string Allergies "Multivalued"
+    }
+
+    DOCTOR {
+        int Person_ID PK 
+        string Specialty
+        string License_Number UK
+        string Treatments "Multivalued"
+    }
+
+    NURSE {
+        int Person_ID PK 
+    }
+
+    ADMIN {
+        int Person_ID PK 
+        string Role_Level
+        string MFA_Secret "NOT NULL"
+    }
+
+    STAFF {
+        int Person_ID PK 
+        string Job_Title
+    }
+
+    PERSON ||--|| MEDICAL_STAFF : ""
+    PERSON ||--|| PATIENT : ""
+    PERSON ||--|| ADMIN : ""
+    PERSON ||--|| STAFF : ""
+    
+    MEDICAL_STAFF ||--|| DOCTOR : ""
+    MEDICAL_STAFF ||--|| NURSE : ""

@@ -1,0 +1,41 @@
+erDiagram
+
+    HOSPITAL {}
+    DEPARTMENT {}
+    ROOM {}
+    MEDICAL_STAFF {}
+    PATIENT {}
+    DOCTOR {}
+    APPOINTMENT {}
+    PRESCRIPTION {}
+    LAB_RESULT {}
+    INSURANCE {}
+    BILLING {}
+    INSURANCE_PROVIDER {}
+    PAYER {}
+    PAYMENT {}
+    DISEASE {}
+
+
+    HOSPITAL ||..|{ DEPARTMENT : ""
+    DEPARTMENT ||..|{ MEDICAL_STAFF : ""
+    DEPARTMENT ||--|{ ROOM : ""
+
+    PATIENT ||..o{ APPOINTMENT : ""
+    DOCTOR ||..o{ APPOINTMENT : ""
+
+    APPOINTMENT ||--o| PRESCRIPTION : ""
+
+    APPOINTMENT ||..o{ LAB_RESULT : ""
+    APPOINTMENT ||..|| BILLING : ""
+
+    PATIENT ||..|| INSURANCE : ""
+    INSURANCE_PROVIDER ||..|{ INSURANCE : ""
+
+    BILLING ||..|{ PAYMENT : ""
+    PAYER ||..|{ PAYMENT : ""
+
+    PATIENT ||..|| PAYER : ""
+    INSURANCE_PROVIDER ||..|| PAYER : ""
+
+    PATIENT }o..o{ DISEASE : "Diagnosed_With"
