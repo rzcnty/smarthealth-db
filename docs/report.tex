@@ -713,8 +713,7 @@ The schema reaches BCNF, the strictest of the functional dependency-based forms,
 	\item Since there are no non-trivial functional dependencies $\alpha \rightarrow \beta$ where $\alpha$ is not a superkey, the system is inherently in BCNF. No prime attribute is functionally determined by a non-superkey.
 \end{itemize}
 
-For more information, see \href{https://github.com/mosquitozm100/JHU-EN.601.615-Databases/blob/master/Database%20System%20Concepts%2C%20Seventh%20Edition.pdf}{Database System Concepts by Silberschatz, Korth and Sudarshan, Chapter 7.3: Normal Forms}
-
+For more information, see \href{https://www.db-book.com/}{Database System Concepts by Silberschatz, Korth and Sudarshan, Chapter 7.3: Normal Forms}
 
 \section{SQL Implementation}
 \subsection{Data Definition Language (DDL) and Table Constraints}
@@ -1177,5 +1176,96 @@ WHERE NOT EXISTS (
 	      \end{itemize}
 
 \end{enumerate}
+
+\section{Indexing \& File Structures: Performance Discussion}
+
+In this final section, we implemented and analyzed the fundamental file structures and indexing algorithms required for query optimization in large-scale relational databases. To observe the architectural impact mathematically, a temporary isolated test relation (\texttt{Performance\_Test}) consisting of 1,000,000 tuples was generated using PostgreSQL's \texttt{generate\_series()} function.
+Since the baseline mock data of our hospital database is relatively small, the PostgreSQL query optimizer naturally prefers Sequential Scans (reading the entire table) over Index Scans, as it is mathematically cheaper for small tables. To accurately demonstrate and observe the true performance impact of file structures (B+ Tree and Hash), an isolated temporary relation named \texttt{Performance\_Test} was created. Using PostgreSQL's native \texttt{generate\_series()} function, this table was populated with 1,000,000 synthetic rows. The following performance analyses and index comparisons are based on this large-scale dataset to clearly illustrate the efficiency of indexing algorithms in big data environments.
+
+\begin{lstlisting}[language=SQL, caption=Query: Doctors with No Appointments, basicstyle=\ttfamily\footnotesize, breaklines=true]
+
+CREATE TABLE "Performance_Test" (
+    "Test_ID" SERIAL PRIMARY KEY,
+    "Patient_Code" VARCHAR(50),
+    "Billing_Amount" NUMERIC(10, 2)
+);
+
+INSERT INTO "Performance_Test" ("Patient_Code", "Billing_Amount")
+SELECT 
+    'PT-' || md5(random()::text), 
+    (random() * 10000)::NUMERIC(10, 2)
+FROM generate_series(1, 1000000);
+
+\end{lstlisting}
+
+\subsection{Implementation and Methodology}
+Two distinct index structures were implemented to handle different mathematical constraints:
+\begin{itemize}
+	\item \textbf{Hash Index:} Created on the \texttt{Patient\_Code} attribute. Hash indexes map keys to specific disk buckets using a cryptographic hash function, giving them an $O(1)$ time complexity for exact-match equality (\texttt{=}) queries.
+	\item \textbf{B+ Tree Index:} Created on the \texttt{Billing\_Amount} attribute. Because PostgreSQL's default BTREE implementation actually utilizes a B+ Tree structure (where data pointers are stored only in the leaf nodes, connected via linked lists), it offers an $O(\log n)$ time complexity, making it exceptionally optimal for range queries (\texttt{BETWEEN}, \texttt{<}, \texttt{>}).
+\end{itemize}
+
+\subsection{Indexed vs. Non-Indexed Query Performance Analysis}
+The query execution plans were analyzed using the \texttt{EXPLAIN ANALYZE} utility.
+
+\subsubsection{Scenario 1: Exact Match Query (Hash Index)}
+Query: \texttt{SELECT * FROM Performance\_Test WHERE Patient\_Code = 'PT-1234567890abcdef';}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{hash_0.png}
+	\caption{Database engine was forced to read all 1,000,000 rows sequentially}
+\end{figure}
+
+After Hash Implementation:
+
+\begin{lstlisting}[language=SQL, basicstyle=\ttfamily\footnotesize, breaklines=true]
+CREATE INDEX idx_hash_patient_code ON "Performance_Test" USING HASH ("Patient_Code");
+\end{lstlisting}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{hash_1.png}
+	\caption{Engine utilized the hash function to locate the exact memory bucket instantly}
+\end{figure}
+
+\subsubsection{Scenario 2: Range Query (B+ Tree Index)}
+Query: \texttt{SELECT * FROM Performance\_Test WHERE Billing\_Amount BETWEEN 5000 AND 5010;}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{bp_0.png}
+\end{figure}
+
+\begin{lstlisting}[language=SQL, basicstyle=\ttfamily\footnotesize, breaklines=true]
+CREATE INDEX idx_btree_billing_amount ON "Performance_Test" USING BTREE ("Billing_Amount");
+\end{lstlisting}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{bp_1.png}
+	\caption{Engine traversed the B+ Tree depth and retrieved the range via leaf-node linked lists.}
+\end{figure}
+
+So, empirical data explicitly demonstrates that implementing appropriate file structures prevents full table scans, drastically reducing disk I/O operations. However, it is crucial to note the architectural trade-off: while indexes exponentially optimize reading performance (\texttt{SELECT}), they introduce write overhead during \texttt{INSERT}, \texttt{UPDATE}, and \texttt{DELETE} operations due to the constant reorganization of the B+ Tree and Hash bucket structures on the disk.
+
+
+\clearpage
+The complete source code of this project, including the DDL schema designs, DML insertions (mock data), and advanced analytical SQL scripts, is maintained under version control. The sanitized and production-ready repository can be accessed via the following link: \\
+\vspace{0.3cm}
+\url{https://github.com/rzcnty/smarthealth-db.git}
+
+\vspace{0.3cm}
+\begin{thebibliography}{9}
+	\addcontentsline{toc}{section}{References}
+	\bibitem{postgresql}
+	PostgreSQL Global Development Group.
+	Available at: \url{https://www.postgresql.org/docs/}
+
+	\bibitem{silberschatz}
+	A. Silberschatz, H. F. Korth, and S. Sudarshan. \textit{Database System Concepts, Seventh Edition}. McGraw-Hill Education, 2019. Chapter 7.3: Normal Forms.
+
+\end{thebibliography}
+
 
 \end{document}
