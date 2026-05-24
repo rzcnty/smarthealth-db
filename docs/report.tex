@@ -1046,6 +1046,136 @@ ALTER TABLE "Billing" ADD CONSTRAINT check_min_bill CHECK ("Total_Amount" >= 50)
 	\caption{Patient who owes the most money to the hospital and his number to give to the lawyer}
 \end{figure}
 
+\section{Relational Algebra \& Tuple Relational Calculus}
+\setcounter{lstlisting}{0}
 
+In this section, the abstract mathematical foundations and logical models of the 5 analytical queries executed in our database architecture are expressed in Relational Algebra (RA) and Tuple Relational Calculus (TRC) formats. The $\gamma$ operator from Extended Relational Algebra was used for grouping and aggregation operations.
+
+\begin{enumerate}
+
+	\item \textbf{Patients with No Appointments} \\
+	      \textit{List of patients registered in the system who have not yet scheduled an appointment (Set Difference).}
+
+	      \begin{lstlisting}[language=SQL, caption=Query: Patients with No Appointments, basicstyle=\ttfamily\footnotesize, breaklines=true]
+SELECT 
+    "Patient"."Person_ID",
+    "Person"."Name_First_Name",
+    "Person"."Name_Last_Name"
+FROM "Patient"
+JOIN "Person"
+    ON "Patient"."Person_ID" = "Person"."Person_ID"
+LEFT JOIN "Appointment"
+    ON "Patient"."Person_ID" = "Appointment"."Patient_ID"
+WHERE "Appointment"."Appointment_ID" IS NULL;
+\end{lstlisting}
+	      \begin{itemize}
+		      \item \textbf{Relational Algebra:}
+		            $$ \begin{aligned} & \pi_{\text{Person\_ID, Name\_First\_Name, Name\_Last\_Name}} ((\text{Patient} \bowtie \text{Person}) \setminus \\ & (\text{Patient} \bowtie \text{Person} \bowtie_{\text{Person\_ID}=\text{Patient\_ID}} \text{Appointment})) \end{aligned} $$
+		      \item \textbf{Tuple Relational Calculus:}
+		            $$ \begin{aligned} \{ t \mid & \exists p \in \text{Person}, \exists pat \in \text{Patient} \, ( \\ & t.\text{Person\_ID} = pat.\text{Person\_ID} \land t.\text{Name\_First\_Name} = p.\text{Name\_First\_Name} \land \\ & t.\text{Name\_Last\_Name} = p.\text{Name\_Last\_Name} \land pat.\text{Person\_ID} = p.\text{Person\_ID} \land \\ & \neg \exists a \in \text{Appointment} \, (a.\text{Patient\_ID} = pat.\text{Person\_ID})) \} \end{aligned} $$
+	      \end{itemize}
+
+	\item \textbf{Patients with Multiple Appointments (COUNT > 1)} \\
+	      \textit{Names and total appointment counts of patients who have at least two different appointments.}
+
+	      \begin{lstlisting}[language=SQL, caption=Query: Patients with Multiple Appointments, basicstyle=\ttfamily\footnotesize, breaklines=true]
+SELECT 
+    "Person"."Name_First_Name",
+    "Person"."Name_Last_Name",
+    COUNT("Appointment"."Appointment_ID") AS "Total_Appointments"
+FROM "Patient"
+JOIN "Person"
+    ON "Patient"."Person_ID" = "Person"."Person_ID"
+JOIN "Appointment"
+    ON "Patient"."Person_ID" = "Appointment"."Patient_ID"
+GROUP BY 
+    "Person"."Name_First_Name",
+    "Person"."Name_Last_Name"
+HAVING COUNT("Appointment"."Appointment_ID") > 1
+ORDER BY "Total_Appointments" DESC;
+\end{lstlisting}
+	      \begin{itemize}
+		      \item \textbf{Relational Algebra:}
+		            $$ \begin{aligned} & \pi_{\text{Name\_First\_Name, Name\_Last\_Name}} ( \\ & \sigma_{\text{Total\_App} > 1} (_{\text{Name\_First\_Name, Name\_Last\_Name}} \gamma_{\text{COUNT}(\text{Appointment\_ID}) \to \text{Total\_App}} ( \\ & \text{Patient} \bowtie \text{Person} \bowtie_{\text{Person\_ID}=\text{Patient\_ID}} \text{Appointment}))) \end{aligned} $$
+		      \item \textbf{Tuple Relational Calculus (Pure Logical Representation):}
+		            $$ \begin{aligned} \{ t \mid & \exists p \in \text{Person}, \exists pat \in \text{Patient}, \exists a_1, a_2 \in \text{Appointment} \, ( \\ & t.\text{Name\_First\_Name} = p.\text{Name\_First\_Name} \land t.\text{Name\_Last\_Name} = p.\text{Name\_Last\_Name} \land \\ & pat.\text{Person\_ID} = p.\text{Person\_ID} \land a_1.\text{Patient\_ID} = pat.\text{Person\_ID} \land \\ & a_2.\text{Patient\_ID} = pat.\text{Person\_ID} \land a_1.\text{Appointment\_ID} \neq a_2.\text{Appointment\_ID}) \} \end{aligned} $$
+	      \end{itemize}
+
+	\item \textbf{Corporate Clients (Insurances) Leaderboard} \\
+	      \textit{Calculation of total payment amounts generated from insurance-type payers.}
+
+	      \begin{lstlisting}[language=SQL, caption=Query: Corporate Clients Leaderboard, basicstyle=\ttfamily\footnotesize, breaklines=true]
+SELECT 
+    "Insurance_Provider"."Provider_Name",
+    "Insurance_Provider"."Provider_Email",
+    SUM("Payment"."Amount_Paid") AS "Total_Corporate_Payment"
+FROM "Payer"
+JOIN "Insurance_Provider"
+    ON "Payer"."Provider_ID" = "Insurance_Provider"."Provider_ID"
+JOIN "Payment"
+    ON "Payer"."Payer_ID" = "Payment"."Payer_ID"
+WHERE "Payer"."Payer_Type" = 'Insurance'
+GROUP BY 
+    "Insurance_Provider"."Provider_Name",
+    "Insurance_Provider"."Provider_Email"
+ORDER BY "Total_Corporate_Payment" DESC;
+\end{lstlisting}
+	      \begin{itemize}
+		      \item \textbf{Relational Algebra:}
+		            $$ \begin{aligned} & _{\text{Provider\_Name, Provider\_Email}} \gamma_{\text{SUM}(\text{Amount\_Paid}) \to \text{Total\_Corp\_Pay}} ( \\ & \sigma_{\text{Payer\_Type} = \text{'Insurance'}}(\text{Payer}) \bowtie \text{Insurance\_Provider} \bowtie \text{Payment}) \end{aligned} $$
+		      \item \textbf{Tuple Relational Calculus:}
+		            $$ \begin{aligned} \{ t \mid & \exists ip \in \text{Insurance\_Provider} \, (t.\text{Provider\_Name} = ip.\text{Provider\_Name} \land \\ & t.\text{Provider\_Email} = ip.\text{Provider\_Email} \land t.\text{Total\_Corp\_Pay} = \text{SUM}( \\ & \{ p.\text{Amount\_Paid} \mid \exists py \in \text{Payer} \, (p.\text{Payer\_ID} = py.\text{Payer\_ID} \land \\ & py.\text{Provider\_ID} = ip.\text{Provider\_ID} \land py.\text{Payer\_Type} = \text{'Insurance'}) \} )) \} \end{aligned} $$
+	      \end{itemize}
+
+	\item \textbf{Average Billing Amounts by Department} \\
+	      \textit{Analysis of average revenue generated by medical departments through appointments.}
+
+	      \begin{lstlisting}[language=SQL, caption=Query: Average Billing Amounts by Department, basicstyle=\ttfamily\footnotesize, breaklines=true]
+SELECT 
+    "Department"."Department_Name" AS "Disease_Category",
+    AVG("Billing"."Total_Amount") AS "Average_Cost"
+FROM "Appointment"
+JOIN "Doctor"
+    ON "Appointment"."Doctor_ID" = "Doctor"."Person_ID"
+JOIN "Medical_Staff"
+    ON "Doctor"."Person_ID" = "Medical_Staff"."Person_ID"
+JOIN "Department"
+    ON "Medical_Staff"."Department_ID" = "Department"."Department_ID"
+JOIN "Billing"
+    ON "Appointment"."Appointment_ID" = "Billing"."Appointment_ID"
+GROUP BY "Department"."Department_Name"
+ORDER BY "Average_Cost" DESC;
+\end{lstlisting}
+	      \begin{itemize}
+		      \item \textbf{Relational Algebra:}
+		            $$ \begin{aligned} & _{\text{Department\_Name}} \gamma_{\text{AVG}(\text{Total\_Amount}) \to \text{Average\_Cost}} ( \\ & \text{Appointment} \bowtie_{\text{Doctor\_ID} = \text{Person\_ID}} \text{Doctor} \bowtie \text{Medical\_Staff} \\ & \bowtie \text{Department} \bowtie \text{Billing}) \end{aligned} $$
+		      \item \textbf{Tuple Relational Calculus:}
+		            $$ \begin{aligned} \{ t \mid & \exists dep \in \text{Department} \, (t.\text{Disease\_Category} = dep.\text{Department\_Name} \land \\ & t.\text{Average\_Cost} = \text{AVG}( \{ b.\text{Total\_Amount} \mid \exists a \in \text{Appointment}, \\ & \exists doc \in \text{Doctor}, \exists ms \in \text{Medical\_Staff} \, (b.\text{Appointment\_ID} = a.\text{Appointment\_ID} \land \\ & a.\text{Doctor\_ID} = doc.\text{Person\_ID} \land doc.\text{Person\_ID} = ms.\text{Person\_ID} \land \\ & ms.\text{Department\_ID} = dep.\text{Department\_ID}) \} )) \} \end{aligned} $$
+	      \end{itemize}
+
+	\item \textbf{Phantom Doctors (Doctors with No Appointments)} \\
+	      \textit{Doctors who are registered in the hospital system but have no appointments assigned to them.}
+
+	      \begin{lstlisting}[language=SQL, caption=Query: Doctors with No Appointments, basicstyle=\ttfamily\footnotesize, breaklines=true]
+SELECT 
+    "Person"."Name_First_Name",
+    "Person"."Name_Last_Name"
+FROM "Person"
+JOIN "Doctor"
+    ON "Person"."Person_ID" = "Doctor"."Person_ID"
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM "Appointment"
+    WHERE "Appointment"."Doctor_ID" = "Doctor"."Person_ID"
+);
+\end{lstlisting}
+	      \begin{itemize}
+		      \item \textbf{Relational Algebra:}
+		            $$ \begin{aligned} & \pi_{\text{Name\_First\_Name, Name\_Last\_Name}} ((\text{Person} \bowtie \text{Doctor}) \setminus \\ & (\text{Person} \bowtie \text{Doctor} \bowtie_{\text{Doctor\_ID}=\text{Doctor\_ID}} \text{Appointment})) \end{aligned} $$
+		      \item \textbf{Tuple Relational Calculus:}
+		            $$ \begin{aligned} \{ t \mid & \exists p \in \text{Person}, \exists d \in \text{Doctor} \, ( \\ & t.\text{Name\_First\_Name} = p.\text{Name\_First\_Name} \land t.\text{Name\_Last\_Name} = p.\text{Name\_Last\_Name} \land \\ & p.\text{Person\_ID} = d.\text{Person\_ID} \land \\ & \neg \exists a \in \text{Appointment} \, (a.\text{Doctor\_ID} = d.\text{Person\_ID})) \} \end{aligned} $$
+	      \end{itemize}
+
+\end{enumerate}
 
 \end{document}
